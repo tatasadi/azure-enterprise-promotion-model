@@ -1,0 +1,58 @@
+# ============================================
+# BUILD TEMPLATE - Reusable Build Stage
+# ============================================
+
+parameters:
+- name: buildConfiguration
+  type: string
+  default: 'Release'
+- name: dotnetVersion
+  type: string
+  default: '10.0.x'
+- name: projectPath
+  type: string
+  default: 'src/InventoryApi/InventoryApi.csproj'
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Install .NET SDK ${{ parameters.dotnetVersion }}'
+  inputs:
+    packageType: 'sdk'
+    version: '${{ parameters.dotnetVersion }}'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Restore NuGet packages'
+  inputs:
+    command: 'restore'
+    projects: '${{ parameters.projectPath }}'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Build application'
+  inputs:
+    command: 'build'
+    projects: '${{ parameters.projectPath }}'
+    arguments: '--configuration ${{ parameters.buildConfiguration }} --no-restore'
+
+# Uncomment when you add tests
+# - task: DotNetCoreCLI@2
+#   displayName: 'Run unit tests'
+#   inputs:
+#     command: 'test'
+#     projects: '**/*Tests.csproj'
+#     arguments: '--configuration ${{ parameters.buildConfiguration }} --no-build'
+
+- task: DotNetCoreCLI@2
+  displayName: 'Publish application'
+  inputs:
+    command: 'publish'
+    projects: '${{ parameters.projectPath }}'
+    arguments: '--configuration ${{ parameters.buildConfiguration }} --output $(Build.ArtifactStagingDirectory)/app'
+    publishWebProjects: false
+    zipAfterPublish: true
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish build artifact'
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)/app'
+    ArtifactName: 'app-package'
+    publishLocation: 'Container'

@@ -1,0 +1,45 @@
+# ============================================
+# TERRAFORM APPLY TEMPLATE
+# ============================================
+
+parameters:
+- name: environment
+  type: string
+- name: azureServiceConnection
+  type: string
+- name: workingDirectory
+  type: string
+
+steps:
+- task: DownloadPipelineArtifact@2
+  displayName: 'Download Terraform Plan'
+  inputs:
+    buildType: 'current'
+    artifactName: 'tfplan-${{ parameters.environment }}'
+    targetPath: '${{ parameters.workingDirectory }}'
+
+- task: TerraformInstaller@1
+  displayName: 'Install Terraform'
+  inputs:
+    terraformVersion: 'latest'
+
+- task: TerraformTaskV4@4
+  displayName: 'Terraform Init - ${{ parameters.environment }}'
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    workingDirectory: '${{ parameters.workingDirectory }}'
+    backendServiceArm: '${{ parameters.azureServiceConnection }}'
+    backendAzureRmResourceGroupName: 'rg-terraform-state'
+    backendAzureRmStorageAccountName: 'sttfstatedev001'
+    backendAzureRmContainerName: 'tfstate'
+    backendAzureRmKey: 'inventory-${{ parameters.environment }}.tfstate'
+
+- task: TerraformTaskV4@4
+  displayName: 'Terraform Apply - ${{ parameters.environment }}'
+  inputs:
+    provider: 'azurerm'
+    command: 'apply'
+    workingDirectory: '${{ parameters.workingDirectory }}'
+    environmentServiceNameAzureRM: '${{ parameters.azureServiceConnection }}'
+    commandOptions: 'tfplan'

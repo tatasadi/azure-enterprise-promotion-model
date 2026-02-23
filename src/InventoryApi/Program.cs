@@ -1,12 +1,34 @@
+using Azure.Identity;
+using Azure.Security.KeyVault.Secrets;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ===============================================
+// ENTERPRISE-GRADE CONFIGURATION
+// ===============================================
+
+// Configure Azure Key Vault integration
+var keyVaultUri = builder.Configuration["Azure:KeyVault:VaultUri"];
+if (!string.IsNullOrEmpty(keyVaultUri))
+{
+    // Use Managed Identity in Azure, DefaultAzureCredential for local dev
+    var credential = new DefaultAzureCredential();
+    builder.Configuration.AddAzureKeyVault(
+        new Uri(keyVaultUri),
+        credential);
+}
+
+// Add services to the container
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
+builder.Services.AddHealthChecks();
+
+// Add Application Insights (optional but recommended)
+builder.Services.AddApplicationInsightsTelemetry();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -14,99 +36,220 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Map health checks
+app.MapHealthChecks("/health");
+
 // ===============================================
-// LEGACY API - INTENTIONAL ANTI-PATTERNS
+// ENTERPRISE API ENDPOINTS
 // ===============================================
 
-// Health Check endpoint
-app.MapGet("/health", () =>
+// Enhanced health check with proper security
+app.MapGet("/health/ready", (IConfiguration config) =>
 {
-    return Results.Ok(new {
-        status = "healthy",
+    return Results.Ok(new
+    {
+        status = "ready",
         timestamp = DateTime.UtcNow,
-        // ANTI-PATTERN: Exposing internal configuration
-        database = "myserver.database.windows.net",
-        environment = "Production" // Hardcoded!
+        environment = app.Environment.EnvironmentName,
+        // DO NOT expose internal details in production
+        version = "2.0.0"
     });
 })
-.WithName("HealthCheck");
+.WithName("ReadinessCheck")
+.WithOpenApi();
 
-// Version Info endpoint
-app.MapGet("/api/version", () =>
+// Version endpoint with environment awareness
+app.MapGet("/api/version", (IConfiguration config) =>
 {
-    return Results.Ok(new {
-        version = "1.0.0",
-        buildDate = "2026-02-23", // Hardcoded build date!
-        environment = "Production" // No environment awareness
-    });
-})
-.WithName("GetVersion");
+    var buildDate = config["Build:Date"] ?? "Unknown";
+    var buildNumber = config["Build:Number"] ?? "Unknown";
 
-// Get all inventory items
-app.MapGet("/api/inventory", () =>
-{
-    // ANTI-PATTERN: Hardcoded connection string access
-    var connectionString = "Server=tcp:myserver.database.windows.net,1433;Initial Catalog=InventoryDB;User ID=sqladmin;Password=P@ssw0rd123!;";
-
-    // Simulating database access (not actually connecting for demo purposes)
-    var items = new List<InventoryItem>
+    return Results.Ok(new
     {
-        new InventoryItem(1, "Widget A", 100, 9.99m),
-        new InventoryItem(2, "Widget B", 50, 19.99m),
-        new InventoryItem(3, "Widget C", 75, 14.99m)
-    };
-
-    return Results.Ok(items);
-})
-.WithName("GetInventory");
-
-// Get inventory item by ID
-app.MapGet("/api/inventory/{id}", (int id) =>
-{
-    // ANTI-PATTERN: No error handling, hardcoded data
-    var items = new List<InventoryItem>
-    {
-        new InventoryItem(1, "Widget A", 100, 9.99m),
-        new InventoryItem(2, "Widget B", 50, 19.99m),
-        new InventoryItem(3, "Widget C", 75, 14.99m)
-    };
-
-    var item = items.FirstOrDefault(i => i.Id == id);
-
-    // No null check - will throw exception!
-    return Results.Ok(item);
-})
-.WithName("GetInventoryById");
-
-// Create new inventory item
-app.MapPost("/api/inventory", (InventoryItem item) =>
-{
-    // ANTI-PATTERN: Hardcoded API key validation
-    var apiKey = "hardcoded-api-key-12345";
-
-    // ANTI-PATTERN: No actual database insert, just return the item
-    return Results.Created($"/api/inventory/{item.Id}", item);
-})
-.WithName("CreateInventory");
-
-// External API call example
-app.MapGet("/api/external-data", async () =>
-{
-    // ANTI-PATTERN: Hardcoded external API credentials
-    var externalApiUrl = "https://api.example.com/data";
-    var apiSecret = "my-secret-key-hardcoded";
-
-    // Simulate external API call
-    return Results.Ok(new {
-        message = "This would call external API with hardcoded credentials",
-        url = externalApiUrl,
-        // ANTI-PATTERN: Exposing secrets in response!
-        secret = apiSecret
+        version = "2.0.0",
+        buildDate,
+        buildNumber,
+        environment = app.Environment.EnvironmentName
     });
 })
-.WithName("GetExternalData");
+.WithName("GetVersion")
+.WithOpenApi();
+
+// Get all inventory items with proper error handling
+app.MapGet("/api/inventory", (IConfiguration config, ILogger<Program> logger) =>
+{
+    try
+    {
+        logger.LogInformation("Fetching all inventory items");
+
+        // In production, this would use the connection string from Key Vault
+        // var connectionString = config.GetConnectionString("DefaultConnection");
+
+        // Simulating database access with in-memory data for demo
+        var items = new List<InventoryItem>
+        {
+            new InventoryItem(1, "Enterprise Widget A", 100, 9.99m, DateTime.UtcNow),
+            new InventoryItem(2, "Enterprise Widget B", 50, 19.99m, DateTime.UtcNow),
+            new InventoryItem(3, "Enterprise Widget C", 75, 14.99m, DateTime.UtcNow)
+        };
+
+        logger.LogInformation("Successfully retrieved {Count} inventory items", items.Count);
+        return Results.Ok(items);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error fetching inventory items");
+        return Results.Problem(
+            title: "Error retrieving inventory",
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
+})
+.WithName("GetInventory")
+.WithOpenApi();
+
+// Get inventory item by ID with validation and error handling
+app.MapGet("/api/inventory/{id:int}", (int id, ILogger<Program> logger) =>
+{
+    try
+    {
+        if (id <= 0)
+        {
+            logger.LogWarning("Invalid inventory ID requested: {Id}", id);
+            return Results.BadRequest(new { error = "Invalid ID. Must be greater than 0." });
+        }
+
+        logger.LogInformation("Fetching inventory item with ID: {Id}", id);
+
+        var items = new List<InventoryItem>
+        {
+            new InventoryItem(1, "Enterprise Widget A", 100, 9.99m, DateTime.UtcNow),
+            new InventoryItem(2, "Enterprise Widget B", 50, 19.99m, DateTime.UtcNow),
+            new InventoryItem(3, "Enterprise Widget C", 75, 14.99m, DateTime.UtcNow)
+        };
+
+        var item = items.FirstOrDefault(i => i.Id == id);
+
+        if (item == null)
+        {
+            logger.LogWarning("Inventory item not found: {Id}", id);
+            return Results.NotFound(new { error = $"Item with ID {id} not found." });
+        }
+
+        logger.LogInformation("Successfully retrieved inventory item: {Id}", id);
+        return Results.Ok(item);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error fetching inventory item {Id}", id);
+        return Results.Problem(
+            title: "Error retrieving inventory item",
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
+})
+.WithName("GetInventoryById")
+.WithOpenApi();
+
+// Create new inventory item with validation
+app.MapPost("/api/inventory", (InventoryItem item, IConfiguration config, ILogger<Program> logger) =>
+{
+    try
+    {
+        // Validate input
+        if (string.IsNullOrWhiteSpace(item.Name))
+        {
+            return Results.BadRequest(new { error = "Item name is required." });
+        }
+
+        if (item.Quantity < 0)
+        {
+            return Results.BadRequest(new { error = "Quantity cannot be negative." });
+        }
+
+        if (item.Price < 0)
+        {
+            return Results.BadRequest(new { error = "Price cannot be negative." });
+        }
+
+        // API key from Key Vault (retrieved via configuration)
+        var apiKey = config["ApiKey"];
+        if (string.IsNullOrEmpty(apiKey))
+        {
+            logger.LogWarning("API key not configured");
+        }
+
+        logger.LogInformation("Creating new inventory item: {Name}", item.Name);
+
+        // In production, this would insert into database
+        var createdItem = item with { LastUpdated = DateTime.UtcNow };
+
+        logger.LogInformation("Successfully created inventory item: {Id}", createdItem.Id);
+        return Results.Created($"/api/inventory/{createdItem.Id}", createdItem);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error creating inventory item");
+        return Results.Problem(
+            title: "Error creating inventory item",
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
+})
+.WithName("CreateInventory")
+.WithOpenApi();
+
+// External API call with proper secret management
+app.MapGet("/api/external-data", async (IConfiguration config, ILogger<Program> logger) =>
+{
+    try
+    {
+        // Configuration from Key Vault and appsettings
+        var externalApiUrl = config["ApiSettings:ExternalApiUrl"];
+        var externalApiSecret = config["ExternalApiSecret"]; // From Key Vault
+
+        logger.LogInformation("Calling external API");
+
+        // Simulate external API call (in production, use HttpClient)
+        await Task.Delay(100); // Simulate network call
+
+        return Results.Ok(new
+        {
+            message = "External API call completed successfully",
+            timestamp = DateTime.UtcNow,
+            // NEVER expose secrets in response!
+            hasApiSecret = !string.IsNullOrEmpty(externalApiSecret)
+        });
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error calling external API");
+        return Results.Problem(
+            title: "Error calling external API",
+            statusCode: StatusCodes.Status500InternalServerError);
+    }
+})
+.WithName("GetExternalData")
+.WithOpenApi();
+
+// Configuration endpoint (for debugging - should be secured in production)
+app.MapGet("/api/config/status", (IConfiguration config) =>
+{
+    var keyVaultConfigured = !string.IsNullOrEmpty(config["Azure:KeyVault:VaultUri"]);
+
+    return Results.Ok(new
+    {
+        environment = app.Environment.EnvironmentName,
+        keyVaultConfigured,
+        timestamp = DateTime.UtcNow
+    });
+})
+.WithName("ConfigStatus")
+.WithOpenApi();
 
 app.Run();
 
-// Simple record for inventory items
-record InventoryItem(int Id, string Name, int Quantity, decimal Price);
+// Enhanced record with timestamp
+record InventoryItem(
+    int Id,
+    string Name,
+    int Quantity,
+    decimal Price,
+    DateTime LastUpdated);

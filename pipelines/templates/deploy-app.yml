@@ -1,0 +1,55 @@
+# ============================================
+# DEPLOY APP TEMPLATE
+# ============================================
+
+parameters:
+- name: environment
+  type: string
+- name: azureServiceConnection
+  type: string
+- name: appServiceName
+  type: string
+
+steps:
+- task: DownloadBuildArtifacts@1
+  displayName: 'Download application artifact'
+  inputs:
+    buildType: 'current'
+    downloadType: 'single'
+    artifactName: 'app-package'
+    downloadPath: '$(System.ArtifactsDirectory)'
+
+- task: AzureWebApp@1
+  displayName: 'Deploy to App Service - ${{ parameters.environment }}'
+  inputs:
+    azureSubscription: '${{ parameters.azureServiceConnection }}'
+    appType: 'webAppLinux'
+    appName: '${{ parameters.appServiceName }}'
+    package: '$(System.ArtifactsDirectory)/app-package/*.zip'
+    runtimeStack: 'DOTNETCORE|10.0'
+    startUpCommand: ''
+
+- task: AzureAppServiceManage@0
+  displayName: 'Restart App Service'
+  inputs:
+    azureSubscription: '${{ parameters.azureServiceConnection }}'
+    Action: 'Restart Azure App Service'
+    WebAppName: '${{ parameters.appServiceName }}'
+
+- script: |
+    echo "Waiting for app to start..."
+    sleep 30
+  displayName: 'Wait for application startup'
+
+- script: |
+    echo "Testing health endpoint..."
+    response=$(curl -s -o /dev/null -w "%{http_code}" https://${{ parameters.appServiceName }}.azurewebsites.net/health)
+    if [ $response -eq 200 ]; then
+      echo "Health check passed!"
+      exit 0
+    else
+      echo "Health check failed with status code: $response"
+      exit 1
+    fi
+  displayName: 'Smoke test - Health check'
+  condition: succeededOrFailed()

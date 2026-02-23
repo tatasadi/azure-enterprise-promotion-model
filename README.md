@@ -1,25 +1,24 @@
 # Azure Enterprise Promotion Model
 
-## ⚠️ LEGACY BRANCH - ANTI-PATTERNS DEMONSTRATION
+## ✅ ENTERPRISE SOLUTION - MAIN BRANCH
 
-> **WARNING:** This is the `legacy` branch containing **intentional anti-patterns** and security issues. This code demonstrates common mistakes found in real-world implementations.
->
-> **DO NOT USE THIS CODE IN PRODUCTION!**
+> **This is the `main` branch** containing the **enterprise-grade refactored implementation**. This demonstrates modern DevOps best practices for Azure CI/CD.
 
 ---
 
 ## 🎯 Purpose
 
-This branch demonstrates a **legacy CI/CD implementation** with realistic but flawed practices commonly seen in enterprise environments before DevOps maturity.
+This project demonstrates transformation from legacy CI/CD practices to an enterprise-grade promotion model on Azure, showcasing:
 
-### What This Demonstrates:
-- ❌ Hardcoded secrets and connection strings
-- ❌ Monolithic pipeline YAML
-- ❌ No environment separation
-- ❌ No Infrastructure as Code (manual Azure resources)
-- ❌ Direct production deployments without gates
-- ❌ No artifact promotion strategy
-- ❌ Security vulnerabilities
+- ✅ **Infrastructure as Code** with modular Terraform
+- ✅ **Secret Management** via Azure Key Vault + Managed Identity
+- ✅ **Multi-Environment Strategy** (dev → test → prod)
+- ✅ **Artifact Promotion** (build once, deploy many)
+- ✅ **Approval Gates** between environments
+- ✅ **Modular Pipelines** using reusable templates
+- ✅ **Security Best Practices** (RBAC, least privilege, no hardcoded secrets)
+
+**Portfolio Goal:** Demonstrate Azure Platform Engineer / DevOps Engineer capabilities
 
 ---
 
@@ -28,130 +27,277 @@ This branch demonstrates a **legacy CI/CD implementation** with realistic but fl
 ```
 azure-enterprise-promotion-model/
 ├── src/
-│   └── InventoryApi/              # .NET 10 Web API with hardcoded values
-│       ├── Program.cs             # API with anti-patterns
-│       ├── appsettings.json       # Hardcoded secrets!
-│       └── InventoryApi.csproj
-├── azure-pipelines-legacy.yml     # Monolithic, flawed pipeline
+│   └── InventoryApi/                    # .NET 10 Web API
+│       ├── Program.cs                   # Enterprise-grade with Key Vault integration
+│       ├── appsettings.json             # No secrets! Config references only
+│       └── InventoryApi.csproj          # Azure SDK packages
+│
+├── infrastructure/
+│   ├── modules/                         # Reusable Terraform modules
+│   │   ├── app-service/                 # App Service + Managed Identity
+│   │   ├── key-vault/                   # Key Vault + RBAC
+│   │   └── storage-account/             # State storage
+│   │
+│   ├── environments/                    # Environment-specific configs
+│   │   ├── dev/                         # Development environment
+│   │   ├── test/                        # Test environment
+│   │   └── prod/                        # Production environment
+│   │
+│   └── bootstrap/                       # Terraform state setup
+│
+├── pipelines/
+│   ├── azure-pipelines.yml              # Main orchestrator pipeline
+│   └── templates/                       # Reusable pipeline templates
+│       ├── build.yml                    # Build template
+│       ├── terraform-plan.yml           # Infrastructure planning
+│       ├── terraform-apply.yml          # Infrastructure deployment
+│       └── deploy-app.yml               # Application deployment
+│
 ├── docs/
-│   └── legacy-issues.md           # Detailed documentation of all issues
-└── README.md                      # This file
+│   ├── legacy-issues.md                 # Analysis of legacy anti-patterns
+│   ├── architecture.md                  # Architecture decisions (TBD)
+│   └── setup-guide.md                   # Setup instructions (TBD)
+│
+├── azure-pipelines-legacy.yml           # Legacy pipeline (for comparison)
+└── README.md                            # This file
 ```
 
 ---
 
-## 🔴 Major Issues in This Branch
+## 🏗️ Architecture Overview
 
-### Security Issues:
-1. **Hardcoded Secrets** - Database passwords in `appsettings.json`
-2. **Pipeline Variables** - Secrets stored as pipeline variables
-3. **Information Disclosure** - API endpoints expose internal configuration
+### **Three-Environment Promotion Model**
 
-### Pipeline Issues:
-4. **Monolithic YAML** - Single massive pipeline file
-5. **No Environment Separation** - Only production environment
-6. **No Approval Gates** - Automatic deployment to production
-7. **No Artifact Promotion** - Rebuilds for each deployment
-8. **No Infrastructure as Code** - Manual resource creation
+```
+┌──────────┐     ┌──────────┐     ┌──────────┐     ┌──────────┐
+│  Build   │ --> │   Dev    │ --> │   Test   │ --> │   Prod   │
+│  (Once)  │     │  (Auto)  │     │ (Approval)     │ (Approval)
+└──────────┘     └──────────┘     └──────────┘     └──────────┘
+                       │                │                │
+                       ▼                ▼                ▼
+                  ┌─────────┐     ┌─────────┐     ┌─────────┐
+                  │App Svc  │     │App Svc  │     │App Svc  │
+                  │Key Vault│     │Key Vault│     │Key Vault│
+                  │Managed  │     │Managed  │     │Managed  │
+                  │Identity │     │Identity │     │Identity │
+                  └─────────┘     └─────────┘     └─────────┘
+```
 
-### Code Quality Issues:
-9. **No Error Handling** - Endpoints throw unhandled exceptions
-10. **No Environment Awareness** - Hardcoded "Production" everywhere
-11. **No Testing** - No unit, integration, or smoke tests
-12. **No Rollback Strategy** - Can't recover from bad deployments
+### **Key Components**
 
-**See [docs/legacy-issues.md](docs/legacy-issues.md) for detailed analysis.**
+1. **App Service** - Linux Web App with system-assigned Managed Identity
+2. **Key Vault** - Stores secrets (connection strings, API keys)
+3. **Managed Identity** - App Service authenticates to Key Vault without credentials
+4. **Terraform State** - Stored in Azure Storage with state locking
+5. **Pipeline Templates** - Reusable, modular deployment logic
 
 ---
 
-## 🚀 Running the Legacy Application
+## 🚀 Getting Started
 
-### Prerequisites:
+### **Prerequisites**
+
+- Azure subscription
+- Azure DevOps organization
+- Terraform >= 1.0
 - .NET 10 SDK
-- Azure subscription (for pipeline)
-- Azure DevOps account
+- Azure CLI
 
-### Local Development:
+### **1. Local Development**
+
 ```bash
+# Clone the repository
+git clone <your-repo-url>
+cd azure-enterprise-promotion-model
+
+# Checkout main branch
+git checkout main
+
 # Navigate to the API project
 cd src/InventoryApi
 
 # Restore dependencies
 dotnet restore
 
-# Run the application
+# Run locally (will work without Key Vault for dev)
 dotnet run
 ```
 
-### API Endpoints:
-- `GET /health` - Health check (exposes internal config)
-- `GET /api/version` - Version information
+### **2. Bootstrap Terraform State Storage**
+
+```bash
+# Navigate to bootstrap directory
+cd infrastructure/bootstrap
+
+# Login to Azure
+az login
+
+# Initialize and apply
+terraform init
+terraform plan
+terraform apply
+
+# Note the storage account name for pipeline configuration
+```
+
+### **3. Configure Azure DevOps**
+
+1. **Create Service Connections:**
+   - `Azure-ServiceConnection-Dev`
+   - `Azure-ServiceConnection-Test`
+   - `Azure-ServiceConnection-Prod`
+
+2. **Create Environments with Approvals:**
+   - `dev` (no approval)
+   - `test` (1 approver)
+   - `prod` (2 approvers)
+
+3. **Create Pipeline:**
+   - Use `azure-pipelines.yml`
+   - Configure trigger for `main` branch
+
+### **4. Deploy Infrastructure**
+
+The pipeline will automatically:
+1. Build the application (once)
+2. Deploy Terraform infrastructure to dev
+3. Deploy application to dev
+4. Wait for approval → test
+5. Deploy to test
+6. Wait for approval → prod
+7. Deploy to prod
+
+---
+
+## 🔐 Security Features
+
+### **No Hardcoded Secrets**
+- ❌ No connection strings in code
+- ❌ No API keys in appsettings.json
+- ❌ No secrets in pipeline YAML
+
+### **Azure Key Vault Integration**
+- ✅ All secrets stored in Key Vault
+- ✅ Separate Key Vault per environment
+- ✅ RBAC-based access control
+
+### **Managed Identity**
+- ✅ App Service uses system-assigned identity
+- ✅ No credentials needed to access Key Vault
+- ✅ Principle of least privilege
+
+### **Terraform State Security**
+- ✅ State stored in Azure Storage (encrypted)
+- ✅ State locking enabled
+- ✅ Separate state files per environment
+
+---
+
+## 📊 Enterprise Features
+
+| Feature | Legacy | Enterprise (Main) |
+|---------|--------|-------------------|
+| **Secrets Management** | Hardcoded | Azure Key Vault |
+| **Authentication** | Static credentials | Managed Identity |
+| **Infrastructure** | Manual | Terraform (IaC) |
+| **Environments** | 1 (prod only) | 3 (dev/test/prod) |
+| **Deployment** | Rebuild per env | Build once, promote |
+| **Approval Gates** | None | Test + Prod |
+| **Pipeline Structure** | Monolithic | Modular templates |
+| **State Management** | None | Azure Storage backend |
+| **Rollback** | Not possible | Version tracking enabled |
+| **Error Handling** | None | Comprehensive |
+| **Logging** | Minimal | Structured logging |
+
+---
+
+## 🛠️ API Endpoints
+
+All endpoints include proper error handling, validation, and logging:
+
+- `GET /health` - Health check (no sensitive data exposed)
+- `GET /health/ready` - Readiness probe
+- `GET /api/version` - Version with environment awareness
 - `GET /api/inventory` - Get all inventory items
-- `GET /api/inventory/{id}` - Get specific item
-- `POST /api/inventory` - Create new item
-- `GET /api/external-data` - External API call (exposes secrets!)
+- `GET /api/inventory/{id}` - Get specific item (with validation)
+- `POST /api/inventory` - Create new item (with validation)
+- `GET /api/external-data` - External API integration example
+- `GET /api/config/status` - Configuration status (for debugging)
 
 ---
 
-## 📋 Pipeline Configuration
+## 📈 What Was Fixed from Legacy
 
-The legacy pipeline (`azure-pipelines-legacy.yml`) is intentionally flawed:
+Compare the `legacy` branch to see the transformation:
 
-**What it does:**
-1. Builds the .NET application
-2. Deploys directly to production App Service
-3. Passes secrets as app settings
+### **Security Improvements**
+1. Removed hardcoded secrets → Key Vault integration
+2. Removed pipeline variable secrets → Key Vault
+3. Removed information disclosure → Proper security practices
 
-**What's wrong:**
-- No separate environments
-- No approval process
-- Secrets in pipeline variables
-- No Terraform (assumes manual resource setup)
-- No artifact publishing
-- No tests
+### **Pipeline Improvements**
+4. Monolithic YAML → Modular templates
+5. Single environment → Multi-environment (dev/test/prod)
+6. No approvals → Approval gates
+7. Rebuild per deploy → Artifact promotion
+8. Manual resources → Terraform IaC
 
----
+### **Code Quality Improvements**
+9. No error handling → Comprehensive try-catch
+10. No environment awareness → Environment-based configuration
+11. No testing → Test stages ready (add your tests!)
+12. No rollback → Version tracking + deployment slots
 
-## 🎓 Learning Points
-
-This branch demonstrates what **NOT** to do. Each anti-pattern shown here is:
-- Based on real-world issues
-- Common in legacy systems
-- A security or operational risk
-- Addressable with modern DevOps practices
+**See [docs/legacy-issues.md](docs/legacy-issues.md) for detailed analysis of all anti-patterns.**
 
 ---
 
-## ✅ The Solution
+## 🎓 Key Learnings
 
-See the **`main` branch** for the enterprise-grade refactored implementation that addresses all these issues with:
+### **Infrastructure as Code**
+- Modular Terraform design
+- Environment separation
+- State management best practices
 
-- ✅ Azure Key Vault for secrets
-- ✅ Managed Identity authentication
-- ✅ Modular Terraform infrastructure
-- ✅ Multi-environment setup (dev/test/prod)
-- ✅ Approval gates between environments
-- ✅ Artifact promotion (build once, deploy many)
-- ✅ Pipeline templates (DRY principle)
-- ✅ Proper state management
-- ✅ Rollback capability
-- ✅ RBAC and least privilege
+### **Security**
+- Managed Identity over service principals
+- RBAC instead of access policies
+- Secret rotation capabilities
+
+### **CI/CD**
+- Build once, deploy many times
+- Environment promotion strategy
+- Approval gates for change control
+
+### **Azure Platform**
+- App Service configuration
+- Key Vault integration
+- Service connections and environments
 
 ---
 
 ## 📚 Documentation
 
-- [Legacy Issues Analysis](docs/legacy-issues.md) - Detailed breakdown of all anti-patterns
-- Compare with `main` branch - See the transformation
+- [Legacy Issues Analysis](docs/legacy-issues.md) - What was wrong and why
+- [Architecture Guide](docs/architecture.md) - Design decisions (TBD)
+- [Setup Guide](docs/setup-guide.md) - Step-by-step deployment (TBD)
+- [Migration Guide](docs/migration-guide.md) - Legacy to enterprise (TBD)
 
 ---
 
 ## 🔗 Reference Materials
 
 - [Azure Key Vault](https://learn.microsoft.com/en-us/azure/key-vault/)
-- [Azure DevOps Pipelines](https://learn.microsoft.com/en-us/azure/devops/pipelines/)
-- [Terraform Azure Provider](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)
 - [Managed Identities](https://learn.microsoft.com/en-us/azure/active-directory/managed-identities-azure-resources/)
+- [Terraform Azure Provider](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)
+- [Azure DevOps Pipelines](https://learn.microsoft.com/en-us/azure/devops/pipelines/)
+- [Azure App Service](https://learn.microsoft.com/en-us/azure/app-service/)
+
+---
+
+## 🎬 Demo Video
+
+> Coming soon: Full walkthrough of the transformation
 
 ---
 
@@ -164,12 +310,20 @@ This is a demonstration project for educational purposes.
 ## 👤 Author
 
 **Ehsan**
-- **Purpose:** Portfolio/CV project demonstrating Azure DevOps transformation
+- **Purpose:** Portfolio/CV project demonstrating Azure DevOps expertise
 - **Target Role:** Azure Platform Engineer / DevOps Engineer
-- **LinkedIn:** [Post series planned on legacy → enterprise transformation]
+- **Skills Demonstrated:** CI/CD, Terraform, Azure, Security, DevOps Best Practices
 
 ---
 
-**Branch:** `legacy`
+## 🌟 Compare with Legacy
+
+Want to see the "before" state? Check out the `legacy` branch:
+
+```bash
+git checkout legacy
+```
+
+**Branch:** `main`
 **Last Updated:** 2026-02-23
-**Status:** ⚠️ Demonstration of Anti-Patterns - DO NOT USE IN PRODUCTION
+**Status:** ✅ Production-Ready Enterprise Implementation

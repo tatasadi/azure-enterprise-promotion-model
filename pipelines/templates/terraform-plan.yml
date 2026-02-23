@@ -1,0 +1,55 @@
+# ============================================
+# TERRAFORM PLAN TEMPLATE
+# ============================================
+
+parameters:
+- name: environment
+  type: string
+- name: azureServiceConnection
+  type: string
+- name: terraformVersion
+  type: string
+  default: 'latest'
+- name: workingDirectory
+  type: string
+
+steps:
+- task: TerraformInstaller@1
+  displayName: 'Install Terraform ${{ parameters.terraformVersion }}'
+  inputs:
+    terraformVersion: '${{ parameters.terraformVersion }}'
+
+- task: TerraformTaskV4@4
+  displayName: 'Terraform Init - ${{ parameters.environment }}'
+  inputs:
+    provider: 'azurerm'
+    command: 'init'
+    workingDirectory: '${{ parameters.workingDirectory }}'
+    backendServiceArm: '${{ parameters.azureServiceConnection }}'
+    backendAzureRmResourceGroupName: 'rg-terraform-state'
+    backendAzureRmStorageAccountName: 'sttfstatedev001'
+    backendAzureRmContainerName: 'tfstate'
+    backendAzureRmKey: 'inventory-${{ parameters.environment }}.tfstate'
+
+- task: TerraformTaskV4@4
+  displayName: 'Terraform Validate - ${{ parameters.environment }}'
+  inputs:
+    provider: 'azurerm'
+    command: 'validate'
+    workingDirectory: '${{ parameters.workingDirectory }}'
+
+- task: TerraformTaskV4@4
+  displayName: 'Terraform Plan - ${{ parameters.environment }}'
+  inputs:
+    provider: 'azurerm'
+    command: 'plan'
+    workingDirectory: '${{ parameters.workingDirectory }}'
+    environmentServiceNameAzureRM: '${{ parameters.azureServiceConnection }}'
+    commandOptions: '-out=tfplan -var="build_number=$(Build.BuildNumber)"'
+
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish Terraform Plan'
+  inputs:
+    targetPath: '${{ parameters.workingDirectory }}/tfplan'
+    artifact: 'tfplan-${{ parameters.environment }}'
+    publishLocation: 'pipeline'
