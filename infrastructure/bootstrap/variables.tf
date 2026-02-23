@@ -13,7 +13,7 @@ variable "location" {
 variable "storage_account_name" {
   description = "Name of the storage account (must be globally unique)"
   type        = string
-  default     = "sttfstatecommon001"
+  default     = "sttfstateazpromota"
 }
 
 variable "replication_type" {
