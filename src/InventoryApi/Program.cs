@@ -7,15 +7,28 @@ var builder = WebApplication.CreateBuilder(args);
 // ENTERPRISE-GRADE CONFIGURATION
 // ===============================================
 
-// Configure Azure Key Vault integration
+// Configure Azure Key Vault integration (only if configured)
 var keyVaultUri = builder.Configuration["Azure:KeyVault:VaultUri"];
 if (!string.IsNullOrEmpty(keyVaultUri))
 {
-    // Use Managed Identity in Azure, DefaultAzureCredential for local dev
-    var credential = new DefaultAzureCredential();
-    builder.Configuration.AddAzureKeyVault(
-        new Uri(keyVaultUri),
-        credential);
+    try
+    {
+        // Use Managed Identity in Azure, DefaultAzureCredential for local dev
+        var credential = new DefaultAzureCredential();
+        builder.Configuration.AddAzureKeyVault(
+            new Uri(keyVaultUri),
+            credential);
+        Console.WriteLine($"✓ Connected to Key Vault: {keyVaultUri}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"⚠ Key Vault not available: {ex.Message}");
+        Console.WriteLine("  App will run without Key Vault (local development mode)");
+    }
+}
+else
+{
+    Console.WriteLine("ℹ No Key Vault URI configured - running in local mode");
 }
 
 // Add services to the container
@@ -23,8 +36,8 @@ builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 builder.Services.AddHealthChecks();
 
-// Add Application Insights (optional but recommended)
-builder.Services.AddApplicationInsightsTelemetry();
+// Application Insights can be added with: Microsoft.ApplicationInsights.AspNetCore package
+// builder.Services.AddApplicationInsightsTelemetry();
 
 var app = builder.Build();
 
