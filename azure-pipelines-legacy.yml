@@ -35,10 +35,10 @@ stages:
 
     # Build .NET application
     - task: UseDotNet@2
-      displayName: 'Use .NET 10.0'
+      displayName: 'Use .NET 9.0'
       inputs:
         packageType: 'sdk'
-        version: '10.0.x'
+        version: '9.0.x'
 
     # ANTI-PATTERN: No test stage
     - task: DotNetCoreCLI@2
@@ -72,7 +72,7 @@ stages:
         appType: 'webAppLinux'
         appName: '$(appServiceName)'
         package: '$(Build.ArtifactStagingDirectory)/**/*.zip'
-        runtimeStack: 'DOTNETCORE|10.0'
+        runtimeStack: 'DOTNETCORE|9.0'
         # ANTI-PATTERN: Passing secrets as app settings directly
         appSettings: |
           -ConnectionStrings__DefaultConnection "$(sqlConnectionString)"

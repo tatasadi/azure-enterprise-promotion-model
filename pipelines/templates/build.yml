@@ -8,7 +8,7 @@ parameters:
   default: 'Release'
 - name: dotnetVersion
   type: string
-  default: '10.0.x'
+  default: '9.0.x'
 - name: projectPath
   type: string
   default: 'src/InventoryApi/InventoryApi.csproj'

@@ -27,7 +27,7 @@ This project demonstrates transformation from legacy CI/CD practices to an enter
 ```
 azure-enterprise-promotion-model/
 ├── src/
-│   └── InventoryApi/                    # .NET 10 Web API
+│   └── InventoryApi/                    # .NET 9 Web API
 │       ├── Program.cs                   # Enterprise-grade with Key Vault integration
 │       ├── appsettings.json             # No secrets! Config references only
 │       └── InventoryApi.csproj          # Azure SDK packages
@@ -100,7 +100,7 @@ azure-enterprise-promotion-model/
 - Azure subscription
 - Azure DevOps organization
 - Terraform >= 1.0
-- .NET 10 SDK
+- .NET 9 SDK
 - Azure CLI
 
 ### **1. Local Development**
@@ -147,12 +147,20 @@ terraform apply
    - `Azure-ServiceConnection-Test`
    - `Azure-ServiceConnection-Prod`
 
-2. **Create Environments with Approvals:**
+2. **Create Variable Groups for Secrets:** ⚠️ **REQUIRED**
+   - See [Variable Groups Setup Guide](docs/variable-groups-setup.md)
+   - Create 3 variable groups:
+     - `terraform-secrets-dev`
+     - `terraform-secrets-test`
+     - `terraform-secrets-prod`
+   - Each contains `TF_VAR_KEY_VAULT_SECRETS` with secrets as JSON
+
+3. **Create Environments with Approvals:**
    - `dev` (no approval)
    - `test` (1 approver)
    - `prod` (2 approvers)
 
-3. **Create Pipeline:**
+4. **Create Pipeline:**
    - Use `azure-pipelines.yml`
    - Configure trigger for `main` branch
 

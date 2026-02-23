@@ -1,0 +1,14 @@
+# Example Terraform Variables for Dev Environment
+# Copy this file to terraform.tfvars and fill in your actual values
+# NEVER commit terraform.tfvars to git!
+
+# Secrets for Azure Key Vault
+# These will be stored IN Azure Key Vault, not in the pipeline
+key_vault_secrets = {
+  "ConnectionStrings--DefaultConnection" = "Server=tcp:sql-inventory-dev.database.windows.net,1433;Initial Catalog=InventoryDB-Dev;User ID=youruser;Password=YourSecurePassword123!;Encrypt=True;"
+  "ApiKey"                               = "your-dev-api-key-here"
+  "ExternalApiSecret"                    = "your-dev-external-api-secret-here"
+}
+
+# Build number (optional - usually provided by pipeline)
+# build_number = "1.0.0"

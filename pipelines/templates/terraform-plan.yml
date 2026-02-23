@@ -45,7 +45,9 @@ steps:
     command: 'plan'
     workingDirectory: '${{ parameters.workingDirectory }}'
     environmentServiceNameAzureRM: '${{ parameters.azureServiceConnection }}'
-    commandOptions: '-out=tfplan -var="build_number=$(Build.BuildNumber)"'
+    commandOptions: '-out=tfplan -var="build_number=$(Build.BuildNumber)" -var="key_vault_secrets=$(TF_VAR_KEY_VAULT_SECRETS)"'
+  env:
+    TF_VAR_KEY_VAULT_SECRETS: $(TF_VAR_KEY_VAULT_SECRETS)
 
 - task: PublishPipelineArtifact@1
   displayName: 'Publish Terraform Plan'

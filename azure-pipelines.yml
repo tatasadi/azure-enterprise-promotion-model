@@ -23,7 +23,7 @@ pool:
 
 variables:
   buildConfiguration: 'Release'
-  dotnetVersion: '10.0.x'
+  dotnetVersion: '9.0.x'
 
 stages:
 # ============================================
@@ -47,6 +47,8 @@ stages:
 - stage: Dev_Infrastructure
   displayName: 'Dev - Infrastructure'
   dependsOn: Build
+  variables:
+  - group: terraform-secrets-dev  # Variable Group containing TF_VAR_KEY_VAULT_SECRETS
   jobs:
   - job: TerraformPlan
     displayName: 'Terraform Plan'
@@ -90,6 +92,8 @@ stages:
 - stage: Test_Infrastructure
   displayName: 'Test - Infrastructure'
   dependsOn: Dev_Deploy
+  variables:
+  - group: terraform-secrets-test  # Variable Group containing TF_VAR_KEY_VAULT_SECRETS
   jobs:
   - job: TerraformPlan
     displayName: 'Terraform Plan'
@@ -133,6 +137,8 @@ stages:
 - stage: Prod_Infrastructure
   displayName: 'Prod - Infrastructure'
   dependsOn: Test_Deploy
+  variables:
+  - group: terraform-secrets-prod  # Variable Group containing TF_VAR_KEY_VAULT_SECRETS
   jobs:
   - job: TerraformPlan
     displayName: 'Terraform Plan'

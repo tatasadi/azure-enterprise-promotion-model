@@ -1,0 +1,13 @@
+# Example Terraform Variables for Test Environment
+# Copy this file to terraform.tfvars and fill in your actual values
+# NEVER commit terraform.tfvars to git!
+
+# Secrets for Azure Key Vault
+key_vault_secrets = {
+  "ConnectionStrings--DefaultConnection" = "Server=tcp:sql-inventory-test.database.windows.net,1433;Initial Catalog=InventoryDB-Test;User ID=youruser;Password=YourSecurePassword123!;Encrypt=True;"
+  "ApiKey"                               = "your-test-api-key-here"
+  "ExternalApiSecret"                    = "your-test-external-api-secret-here"
+}
+
+# Build number (optional - usually provided by pipeline)
+# build_number = "1.0.0"

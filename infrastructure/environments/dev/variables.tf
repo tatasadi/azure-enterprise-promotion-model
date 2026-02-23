@@ -41,14 +41,11 @@ variable "key_vault_name" {
 }
 
 variable "key_vault_secrets" {
-  description = "Secrets to store in Key Vault"
+  description = "Secrets to store in Key Vault (provided via pipeline Variable Groups)"
   type        = map(string)
   sensitive   = true
-  default = {
-    "ConnectionStrings--DefaultConnection" = "Server=tcp:sql-inventory-dev.database.windows.net,1433;Initial Catalog=InventoryDB-Dev;Authentication=Active Directory Default;"
-    "ApiKey"                               = "dev-api-key-placeholder"
-    "ExternalApiSecret"                    = "dev-external-secret-placeholder"
-  }
+  # NO DEFAULT - Must be provided via pipeline Variable Groups or .tfvars
+  # See: docs/variable-groups-setup.md for configuration
 }
 
 variable "build_number" {

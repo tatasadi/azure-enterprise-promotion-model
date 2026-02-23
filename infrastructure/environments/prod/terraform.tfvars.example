@@ -1,0 +1,13 @@
+# Example Terraform Variables for Production Environment
+# Copy this file to terraform.tfvars and fill in your actual values
+# NEVER commit terraform.tfvars to git!
+
+# Secrets for Azure Key Vault
+key_vault_secrets = {
+  "ConnectionStrings--DefaultConnection" = "Server=tcp:sql-inventory-prod.database.windows.net,1433;Initial Catalog=InventoryDB-Prod;User ID=youruser;Password=YourSecurePassword123!;Encrypt=True;"
+  "ApiKey"                               = "your-prod-api-key-here"
+  "ExternalApiSecret"                    = "your-prod-external-api-secret-here"
+}
+
+# Build number (optional - usually provided by pipeline)
+# build_number = "1.0.0"

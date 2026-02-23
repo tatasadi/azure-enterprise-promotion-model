@@ -29,7 +29,7 @@ resource "azurerm_linux_web_app" "main" {
     always_on = var.always_on
 
     application_stack {
-      dotnet_version = "10.0"
+      dotnet_version = "9.0"
     }
 
     health_check_path = "/health"
