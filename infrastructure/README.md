@@ -84,7 +84,7 @@ terraform destroy # Destroy all resources (BE CAREFUL!)
 All environments use Azure Storage backend for state:
 
 - **Resource Group:** `rg-terraform-state`
-- **Storage Account:** `sttfstatedev001`
+- **Storage Account:** `sttfstateazpromota`
 - **Container:** `tfstate`
 - **State Files:**
   - Dev: `inventory-dev.tfstate`

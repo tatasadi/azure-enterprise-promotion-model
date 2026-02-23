@@ -19,6 +19,12 @@ steps:
   inputs:
     terraformVersion: '${{ parameters.terraformVersion }}'
 
+- bash: |
+    rm -rf .terraform
+    rm -f .terraform.lock.hcl
+  workingDirectory: '${{ parameters.workingDirectory }}'
+  displayName: 'Clean Terraform Cache'
+
 - task: TerraformTaskV4@4
   displayName: 'Terraform Init - ${{ parameters.environment }}'
   inputs:
@@ -27,7 +33,7 @@ steps:
     workingDirectory: '${{ parameters.workingDirectory }}'
     backendServiceArm: '${{ parameters.azureServiceConnection }}'
     backendAzureRmResourceGroupName: 'rg-terraform-state'
-    backendAzureRmStorageAccountName: 'sttfstatedev001'
+    backendAzureRmStorageAccountName: 'sttfstateazpromota'
     backendAzureRmContainerName: 'tfstate'
     backendAzureRmKey: 'inventory-${{ parameters.environment }}.tfstate'
 
