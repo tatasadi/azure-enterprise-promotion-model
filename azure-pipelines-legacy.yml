@@ -1,0 +1,107 @@
+# ============================================
+# LEGACY PIPELINE - INTENTIONAL ANTI-PATTERNS
+# ============================================
+# This pipeline demonstrates common mistakes and anti-patterns
+# DO NOT USE IN PRODUCTION!
+
+trigger:
+  branches:
+    include:
+    - legacy
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+# ANTI-PATTERN: Hardcoded variables in pipeline
+variables:
+  buildConfiguration: 'Release'
+  azureSubscription: 'my-azure-subscription'
+  # ANTI-PATTERN: Hardcoded resource names (no environment awareness)
+  appServiceName: 'app-inventory-prod'
+  resourceGroupName: 'rg-inventory-prod'
+  # ANTI-PATTERN: Secrets stored as pipeline variables (even if "secret")
+  sqlConnectionString: 'Server=tcp:myserver.database.windows.net,1433;Initial Catalog=InventoryDB;User ID=sqladmin;Password=P@ssw0rd123!;'
+  apiKey: 'hardcoded-api-key-12345'
+  externalApiSecret: 'my-secret-key-hardcoded'
+
+# ANTI-PATTERN: Single monolithic stage - no separation of concerns
+stages:
+- stage: BuildAndDeploy
+  displayName: 'Build and Deploy Everything'
+  jobs:
+  - job: BuildAndDeployJob
+    displayName: 'Build and Deploy to Production'
+    steps:
+
+    # Build .NET application
+    - task: UseDotNet@2
+      displayName: 'Use .NET 10.0'
+      inputs:
+        packageType: 'sdk'
+        version: '10.0.x'
+
+    # ANTI-PATTERN: No test stage
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore dependencies'
+      inputs:
+        command: 'restore'
+        projects: 'src/InventoryApi/InventoryApi.csproj'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Build application'
+      inputs:
+        command: 'build'
+        projects: 'src/InventoryApi/InventoryApi.csproj'
+        arguments: '--configuration $(buildConfiguration) --no-restore'
+
+    # ANTI-PATTERN: No artifact publishing - rebuild for each environment
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish application'
+      inputs:
+        command: 'publish'
+        projects: 'src/InventoryApi/InventoryApi.csproj'
+        arguments: '--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)'
+        publishWebProjects: false
+
+    # ANTI-PATTERN: Directly deploy to production without gates or approval
+    # ANTI-PATTERN: No Terraform - assumes resources are manually created
+    - task: AzureWebApp@1
+      displayName: 'Deploy to Production App Service'
+      inputs:
+        azureSubscription: '$(azureSubscription)'
+        appType: 'webAppLinux'
+        appName: '$(appServiceName)'
+        package: '$(Build.ArtifactStagingDirectory)/**/*.zip'
+        runtimeStack: 'DOTNETCORE|10.0'
+        # ANTI-PATTERN: Passing secrets as app settings directly
+        appSettings: |
+          -ConnectionStrings__DefaultConnection "$(sqlConnectionString)"
+          -ApiSettings__ApiKey "$(apiKey)"
+          -ApiSettings__ExternalApiSecret "$(externalApiSecret)"
+          -ApiSettings__Environment "Production"
+
+    # ANTI-PATTERN: No smoke tests after deployment
+    # ANTI-PATTERN: No rollback strategy
+
+    - script: |
+        echo "Deployment complete!"
+        echo "Deployed to: $(appServiceName)"
+        echo "No verification performed"
+        echo "No rollback plan"
+      displayName: 'Deployment Summary'
+
+# What's wrong with this pipeline?
+# 1. ❌ Single monolithic file - hard to maintain
+# 2. ❌ Hardcoded resource names - not environment-aware
+# 3. ❌ Secrets in pipeline variables instead of Key Vault
+# 4. ❌ No separate environments (dev/test/prod)
+# 5. ❌ No approval gates before production
+# 6. ❌ Rebuilds for each deployment instead of artifact promotion
+# 7. ❌ No Terraform - assumes manual resource creation
+# 8. ❌ No testing stage
+# 9. ❌ No smoke tests after deployment
+# 10. ❌ No rollback capability
+# 11. ❌ Direct deployment to production
+# 12. ❌ No state management
+# 13. ❌ No variable groups - everything inline
+# 14. ❌ Connection strings passed as app settings in plain text

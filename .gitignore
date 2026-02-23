@@ -1,0 +1,51 @@
+# Planning and personal notes
+plan.md
+notes.md
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform.lock.hcl
+
+# Build outputs
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# .NET
+*.user
+*.suo
+*.cache
+project.lock.json
+artifacts/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Azure
+*.PublishSettings
+*.pubxml
+*.publishproj
+
+# Secrets and local configuration
+appsettings.local.json
+appsettings.Development.json
+secrets.json
+.env
+.env.local
+
+# Node (if needed)
+node_modules/
+package-lock.json
