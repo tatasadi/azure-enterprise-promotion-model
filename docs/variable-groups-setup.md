@@ -2,28 +2,29 @@
 
 ## Overview
 
-This project uses **Azure DevOps Variable Groups** to securely manage Terraform variables, especially secrets that will be stored in Azure Key Vault. This follows security best practices by:
+This project uses **Azure DevOps Variable Groups** to securely manage secrets for Azure Key Vault. This follows **security best practices** by:
 
 ✅ **Not storing secrets in code**
 ✅ **Not storing secrets in pipeline YAML**
+✅ **Not storing secrets in Terraform state files**
 ✅ **Using Azure DevOps Library for secret management**
-✅ **Enabling secret rotation without code changes**
+✅ **Enabling secret rotation without infrastructure changes**
 
 ---
 
 ## 🔐 Architecture
 
 ```
-Azure DevOps Variable Group (terraform-secrets-dev)
+Azure DevOps Variable Group (keyvault-secrets-dev)
          ↓
-    (Provides TF_VAR_KEY_VAULT_SECRETS to pipeline)
+    (Provides secret values to pipeline as environment variables)
          ↓
-   Terraform receives secrets as variable
-         ↓
-    Creates/updates secrets in Azure Key Vault
+   Azure CLI task sets secrets directly in Key Vault
          ↓
    App Service reads secrets from Key Vault via Managed Identity
 ```
+
+**Key Change:** Terraform creates the Key Vault infrastructure **only**. Secrets are populated **after** Terraform runs using Azure CLI, keeping secrets out of Terraform state.
 
 ---
 
@@ -31,9 +32,9 @@ Azure DevOps Variable Group (terraform-secrets-dev)
 
 You need to create **3 Variable Groups** in Azure DevOps, one for each environment:
 
-1. `terraform-secrets-dev`
-2. `terraform-secrets-test`
-3. `terraform-secrets-prod`
+1. `keyvault-secrets-dev`
+2. `keyvault-secrets-test`
+3. `keyvault-secrets-prod`
 
 ---
 
@@ -47,60 +48,49 @@ You need to create **3 Variable Groups** in Azure DevOps, one for each environme
 
 ### Step 2: Create Dev Variable Group
 
-1. **Name:** `terraform-secrets-dev`
-2. **Description:** "Terraform secrets for Development environment"
+1. **Name:** `keyvault-secrets-dev`
+2. **Description:** "Key Vault secrets for Development environment"
 3. Click **+ Add** to add variables
 
 ### Step 3: Add Required Variables
 
-Add the following variable:
+Add your application secrets as **individual variables**:
 
-| Variable Name | Value | Type |
-|--------------|-------|------|
-| `TF_VAR_KEY_VAULT_SECRETS` | See format below | Secret |
+| Variable Name | Example Value | Type |
+|--------------|---------------|------|
+| `DATABASE_CONNECTION_STRING` | `Server=tcp:...` | Secret 🔒 |
+| `EXTERNAL_API_KEY` | `dev-api-key-123` | Secret 🔒 |
+| `STORAGE_ACCOUNT_KEY` | `abc123...` | Secret 🔒 |
+| `APPINSIGHTS_INSTRUMENTATION_KEY` | `guid-here` | Secret 🔒 |
 
-**IMPORTANT:** Click the 🔒 lock icon to mark it as **secret**!
+**IMPORTANT:** Click the 🔒 lock icon to mark each variable as **secret**!
 
-### Step 4: Variable Value Format
+### Step 4: Example Secret Values
 
-The value must be a **JSON object** (as a string) with your secrets:
+**Development Example:**
 
-```json
-{"ConnectionStrings--DefaultConnection":"Server=tcp:sql-inventory-dev.database.windows.net,1433;Initial Catalog=InventoryDB-Dev;User ID=youruser;Password=YourDevPassword123!;Encrypt=True;","ApiKey":"dev-api-key-change-this","ExternalApiSecret":"dev-external-secret-change-this"}
-```
-
-**Note:** This is a single-line JSON string. Azure DevOps will store it securely.
-
-#### Pretty Format (for reference):
-```json
-{
-  "ConnectionStrings--DefaultConnection": "Server=tcp:sql-inventory-dev.database.windows.net,1433;Initial Catalog=InventoryDB-Dev;User ID=youruser;Password=YourDevPassword123!;Encrypt=True;",
-  "ApiKey": "dev-api-key-change-this",
-  "ExternalApiSecret": "dev-external-secret-change-this"
-}
-```
+| Variable | Value |
+|----------|-------|
+| `DATABASE_CONNECTION_STRING` | `Server=tcp:sql-inventory-dev.database.windows.net,1433;Initial Catalog=InventoryDB-Dev;User ID=youruser;Password=YourDevPassword123!;` |
+| `EXTERNAL_API_KEY` | `dev-api-key-change-this` |
+| `STORAGE_ACCOUNT_KEY` | `dev-storage-key-here` |
+| `APPINSIGHTS_INSTRUMENTATION_KEY` | `00000000-0000-0000-0000-000000000000` |
 
 ### Step 5: Set Permissions
 
 1. Click on **Pipeline permissions**
-2. Grant access to your pipeline: `azure-enterprise-promotion-model` (or your pipeline name)
+2. Grant access to your pipeline: `azure-enterprise-promotion-model`
 3. Click **Save**
 
 ### Step 6: Repeat for Test Environment
 
-Create variable group: `terraform-secrets-test`
+Create variable group: `keyvault-secrets-test`
 
-```json
-{"ConnectionStrings--DefaultConnection":"Server=tcp:sql-inventory-test.database.windows.net,1433;Initial Catalog=InventoryDB-Test;User ID=youruser;Password=YourTestPassword123!;Encrypt=True;","ApiKey":"test-api-key-change-this","ExternalApiSecret":"test-external-secret-change-this"}
-```
+Use **different** secret values appropriate for test environment.
 
 ### Step 7: Repeat for Production Environment
 
-Create variable group: `terraform-secrets-prod`
-
-```json
-{"ConnectionStrings--DefaultConnection":"Server=tcp:sql-inventory-prod.database.windows.net,1433;Initial Catalog=InventoryDB-Prod;User ID=youruser;Password=YourProdPassword123!;Encrypt=True;","ApiKey":"prod-api-key-change-this","ExternalApiSecret":"prod-external-secret-change-this"}
-```
+Create variable group: `keyvault-secrets-prod`
 
 ⚠️ **IMPORTANT:** Use strong, unique passwords for production!
 
@@ -108,51 +98,56 @@ Create variable group: `terraform-secrets-prod`
 
 ## 🔄 How It Works in the Pipeline
 
-The pipeline references these Variable Groups:
+### 1. Pipeline References Variable Groups
 
 ```yaml
 # azure-pipelines.yml
 - stage: Dev_Infrastructure
   variables:
-  - group: terraform-secrets-dev  # ← Loads the variable group
+  - group: keyvault-secrets-dev  # ← Loads the variable group
   jobs:
-  - job: TerraformPlan
+  - job: TerraformApply
     steps:
-    - template: pipelines/templates/terraform-plan.yml
+    # Terraform creates Key Vault (no secrets)
+    - template: pipelines/templates/terraform-apply.yml
+
+    # Azure CLI populates secrets
+    - template: pipelines/templates/populate-keyvault-secrets.yml
 ```
 
-The Terraform template uses the variable:
+### 2. Terraform Creates Infrastructure Only
 
-```yaml
-# pipelines/templates/terraform-plan.yml
-- task: TerraformTaskV4@4
-  displayName: 'Terraform Plan'
-  inputs:
-    commandOptions: '-var="key_vault_secrets=$(TF_VAR_KEY_VAULT_SECRETS)"'
-  env:
-    TF_VAR_KEY_VAULT_SECRETS: $(TF_VAR_KEY_VAULT_SECRETS)
+Terraform creates:
+- ✅ Key Vault resource
+- ✅ RBAC permissions
+- ✅ Network rules
+- ❌ **Does NOT create secrets**
+
+### 3. Azure CLI Populates Secrets
+
+After Terraform completes, a bash script runs:
+
+```bash
+az keyvault secret set \
+    --vault-name "kv-inventory-dev-001" \
+    --name "DatabaseConnectionString" \
+    --value "$DATABASE_CONNECTION_STRING"
 ```
 
-Terraform receives it as a variable:
-
-```hcl
-# infrastructure/environments/dev/variables.tf
-variable "key_vault_secrets" {
-  description = "Secrets to store in Key Vault"
-  type        = map(string)
-  sensitive   = true
-}
-```
+This approach ensures:
+- Secrets never appear in Terraform state
+- Secrets are managed independently from infrastructure
+- Better separation of concerns
 
 ---
 
-## 🔐 Alternative: Link to Azure Key Vault
+## 🔐 Alternative: Link to Azure Key Vault (Recommended for Production)
 
 For **even better security**, you can link Variable Groups to an **Azure Key Vault**:
 
 ### Setup Steps:
 
-1. Create an Azure Key Vault (separate from app Key Vaults)
+1. Create a **separate** Azure Key Vault for DevOps secrets (not the app Key Vault)
 2. Store your secrets in this Key Vault
 3. In Azure DevOps Library:
    - Toggle **Link secrets from an Azure key vault as variables**
@@ -173,25 +168,53 @@ This way:
 
 To verify your setup:
 
-1. Go to **Pipelines** → **Library**
-2. Click on your variable group
-3. Verify the variable exists and is marked as secret (🔒)
-4. Check **Pipeline permissions** are set
+1. **Check Variable Group:**
+   - Go to **Pipelines** → **Library**
+   - Click on your variable group
+   - Verify all variables exist and are marked as secret (🔒)
+   - Check **Pipeline permissions** are set
 
-Run your pipeline and check the Terraform Plan output. You should see:
+2. **Run Pipeline:**
+   - Watch the "Populate Key Vault Secrets" step
+   - Should show: `Setting secret: DatabaseConnectionString`
+   - Should complete without errors
 
-```
-Terraform will perform the following actions:
+3. **Verify in Azure:**
+   ```bash
+   az keyvault secret list --vault-name kv-inventory-dev-001 --query "[].name"
+   ```
 
-  # module.key_vault.azurerm_key_vault_secret.secrets["ApiKey"] will be created
-  + resource "azurerm_key_vault_secret" "secrets" {
-      + name         = "ApiKey"
-      + value        = (sensitive value)
-      ...
-    }
-```
+---
 
-The `(sensitive value)` indicates Terraform received the secret correctly!
+## 🔐 Customizing Secrets
+
+### Add New Secrets
+
+1. **Update Variable Group:**
+   - Add new variable (e.g., `NEW_SECRET_NAME`)
+   - Mark as secret 🔒
+
+2. **Update Script:**
+   - Edit `infrastructure/scripts/populate-keyvault-secrets.sh`
+   - Add new secret block:
+   ```bash
+   if [ -n "$NEW_SECRET_NAME" ]; then
+       echo "Setting secret: NewSecretName"
+       az keyvault secret set \
+           --vault-name "$KEY_VAULT_NAME" \
+           --name "NewSecretName" \
+           --value "$NEW_SECRET_NAME" \
+           --output none
+   fi
+   ```
+
+3. **Update Pipeline Template:**
+   - Edit `pipelines/templates/populate-keyvault-secrets.yml`
+   - Add environment variable mapping:
+   ```yaml
+   env:
+     NEW_SECRET_NAME: $(NEW_SECRET_NAME)
+   ```
 
 ---
 
@@ -203,12 +226,14 @@ The `(sensitive value)` indicates Terraform received the secret correctly!
 - Rotate secrets regularly
 - Limit pipeline permissions to specific pipelines
 - Use Azure Key Vault-linked Variable Groups for production
+- Keep infrastructure (Terraform) separate from secrets (Azure CLI)
 
 ### DON'T ❌
-- Never commit secrets to git (`.tfvars` files are in `.gitignore`)
+- Never commit secrets to git
 - Never log secret values in pipeline output
 - Don't reuse the same passwords across environments
 - Don't grant broad permissions to Variable Groups
+- Don't pass secrets to Terraform as variables
 
 ---
 
@@ -222,13 +247,22 @@ To rotate a secret:
    - Update the value
    - Click **Save**
 
-2. **Re-run Pipeline:**
-   - The next pipeline run will update the Key Vault
+2. **Re-run Pipeline** (or just the populate step):
+   - The script will update the Key Vault
    - App Service will automatically use the new secret (via Managed Identity)
 
-3. **Zero Downtime:**
-   - No code changes required
-   - No redeployment required (if only changing the secret value)
+3. **Or Update Manually:**
+   ```bash
+   az keyvault secret set \
+       --vault-name kv-inventory-dev-001 \
+       --name "DatabaseConnectionString" \
+       --value "new-value-here"
+   ```
+
+4. **Zero Downtime:**
+   - No Terraform changes required
+   - No infrastructure redeployment
+   - App picks up new secret automatically
 
 ---
 
@@ -240,26 +274,27 @@ To rotate a secret:
 - Verify the variable group name matches exactly (case-sensitive)
 - Check pipeline permissions on the variable group
 
-### "Error parsing key_vault_secrets variable"
+### "Secret not created in Key Vault"
 
 **Solution:**
-- Ensure the JSON is valid (use a JSON validator)
-- Ensure it's a single-line string
-- Check for escaped quotes if needed
+- Check if environment variable is set in pipeline template
+- Verify variable exists in Variable Group
+- Check Azure CLI task logs for errors
+- Ensure service principal has Key Vault Secrets Officer role
 
-### "No value provided for variable 'key_vault_secrets'"
-
-**Solution:**
-- Variable group not linked to the stage
-- Variable name doesn't match (`TF_VAR_KEY_VAULT_SECRETS`)
-- Pipeline permissions not granted
-
-### Secrets Not Created in Key Vault
+### "Access denied when setting secret"
 
 **Solution:**
-- Check Terraform Apply logs for errors
-- Verify JSON format in variable group
-- Ensure service principal has Key Vault permissions
+- Service principal needs "Key Vault Secrets Officer" role
+- Terraform creates this role for the current user
+- Check RBAC assignments on Key Vault
+
+### Variable is empty in script
+
+**Solution:**
+- Ensure variable is mapped in `populate-keyvault-secrets.yml`
+- Check variable name matches exactly (case-sensitive)
+- Variable must be in the Variable Group linked to that stage
 
 ---
 
@@ -267,7 +302,25 @@ To rotate a secret:
 
 - [Azure DevOps Variable Groups](https://learn.microsoft.com/en-us/azure/devops/pipelines/library/variable-groups)
 - [Link Variable Group to Azure Key Vault](https://learn.microsoft.com/en-us/azure/devops/pipelines/library/variable-groups?view=azure-devops&tabs=yaml#link-secrets-from-an-azure-key-vault)
-- [Terraform Sensitive Variables](https://developer.hashicorp.com/terraform/language/values/variables#suppressing-values-in-cli-output)
+- [Azure Key Vault Secret Management](https://learn.microsoft.com/en-us/azure/key-vault/secrets/about-secrets)
+- [Terraform Secrets Management Best Practices](https://developer.hashicorp.com/terraform/tutorials/configuration-language/sensitive-variables)
+
+---
+
+## 🔄 Migration from Old Approach
+
+If you previously used `TF_VAR_KEY_VAULT_SECRETS`:
+
+1. **Rename Variable Groups:**
+   - `terraform-secrets-dev` → `keyvault-secrets-dev`
+
+2. **Restructure Variables:**
+   - From: Single JSON variable
+   - To: Individual secret variables
+
+3. **No Terraform Changes Needed:**
+   - Terraform no longer manages secrets
+   - Existing secrets in Key Vault are preserved
 
 ---
 

@@ -40,14 +40,6 @@ variable "key_vault_name" {
   default     = "kv-inventory-test-001"
 }
 
-variable "key_vault_secrets" {
-  description = "Secrets to store in Key Vault (provided via pipeline Variable Groups)"
-  type        = map(string)
-  sensitive   = true
-  # NO DEFAULT - Must be provided via pipeline Variable Groups or .tfvars
-  # See: docs/variable-groups-setup.md for configuration
-}
-
 variable "build_number" {
   description = "Build number from CI/CD pipeline"
   type        = string

@@ -48,7 +48,7 @@ stages:
   displayName: 'Dev - Infrastructure'
   dependsOn: Build
   variables:
-  - group: terraform-secrets-dev  # Variable Group containing TF_VAR_KEY_VAULT_SECRETS
+  - group: keyvault-secrets-dev  # Variable Group containing secrets for Key Vault (used after Terraform)
   jobs:
   - job: TerraformPlan
     displayName: 'Terraform Plan'
@@ -68,6 +68,12 @@ stages:
         environment: 'dev'
         azureServiceConnection: 'Azure-ServiceConnection-Dev'
         workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/environments/dev'
+
+    - template: pipelines/templates/populate-keyvault-secrets.yml
+      parameters:
+        environment: 'dev'
+        azureServiceConnection: 'Azure-ServiceConnection-Dev'
+        keyVaultName: 'kv-inventory-dev-001'
 
 - stage: Dev_Deploy
   displayName: 'Dev - Deploy Application'
@@ -93,7 +99,7 @@ stages:
   displayName: 'Test - Infrastructure'
   dependsOn: Dev_Deploy
   variables:
-  - group: terraform-secrets-test  # Variable Group containing TF_VAR_KEY_VAULT_SECRETS
+  - group: keyvault-secrets-test  # Variable Group containing secrets for Key Vault (used after Terraform)
   jobs:
   - job: TerraformPlan
     displayName: 'Terraform Plan'
@@ -113,6 +119,12 @@ stages:
         environment: 'test'
         azureServiceConnection: 'Azure-ServiceConnection-Test'
         workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/environments/test'
+
+    - template: pipelines/templates/populate-keyvault-secrets.yml
+      parameters:
+        environment: 'test'
+        azureServiceConnection: 'Azure-ServiceConnection-Test'
+        keyVaultName: 'kv-inventory-test-001'
 
 - stage: Test_Deploy
   displayName: 'Test - Deploy Application'
@@ -138,7 +150,7 @@ stages:
   displayName: 'Prod - Infrastructure'
   dependsOn: Test_Deploy
   variables:
-  - group: terraform-secrets-prod  # Variable Group containing TF_VAR_KEY_VAULT_SECRETS
+  - group: keyvault-secrets-prod  # Variable Group containing secrets for Key Vault (used after Terraform)
   jobs:
   - job: TerraformPlan
     displayName: 'Terraform Plan'
@@ -158,6 +170,12 @@ stages:
         environment: 'prod'
         azureServiceConnection: 'Azure-ServiceConnection-Prod'
         workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/environments/prod'
+
+    - template: pipelines/templates/populate-keyvault-secrets.yml
+      parameters:
+        environment: 'prod'
+        azureServiceConnection: 'Azure-ServiceConnection-Prod'
+        keyVaultName: 'kv-inventory-prod-001'
 
 - stage: Prod_Deploy
   displayName: 'Prod - Deploy Application'

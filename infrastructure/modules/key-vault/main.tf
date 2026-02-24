@@ -19,7 +19,7 @@ resource "azurerm_key_vault" "main" {
   soft_delete_retention_days = 7
   purge_protection_enabled   = var.purge_protection_enabled
 
-  enable_rbac_authorization = true
+  rbac_authorization_enabled = true
 
   network_acls {
     bypass         = "AzureServices"
@@ -38,7 +38,6 @@ resource "azurerm_role_assignment" "terraform_secrets_officer" {
 
 # RBAC: Grant Key Vault Secrets User to the App Service Managed Identity
 resource "azurerm_role_assignment" "app_service_secrets_user" {
-  count                = var.app_service_principal_id != "" ? 1 : 0
   scope                = azurerm_key_vault.main.id
   role_definition_name = "Key Vault Secrets User"
   principal_id         = var.app_service_principal_id
@@ -46,13 +45,6 @@ resource "azurerm_role_assignment" "app_service_secrets_user" {
   depends_on = [azurerm_key_vault.main]
 }
 
-# Create secrets in Key Vault
-resource "azurerm_key_vault_secret" "secrets" {
-  for_each = var.secrets
-
-  name         = each.key
-  value        = each.value
-  key_vault_id = azurerm_key_vault.main.id
-
-  depends_on = [azurerm_role_assignment.terraform_secrets_officer]
-}
+# NOTE: Secrets are managed outside of Terraform for security best practices
+# Secrets should be added via Azure CLI, Azure Portal, or pipeline tasks after Terraform creates the Key Vault
+# Example: az keyvault secret set --vault-name <vault-name> --name "SecretName" --value "SecretValue"

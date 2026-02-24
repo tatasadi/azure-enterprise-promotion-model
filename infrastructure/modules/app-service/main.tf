@@ -32,7 +32,8 @@ resource "azurerm_linux_web_app" "main" {
       dotnet_version = "9.0"
     }
 
-    health_check_path = "/health"
+    health_check_path                   = "/health"
+    health_check_eviction_time_in_min   = 10
   }
 
   identity {

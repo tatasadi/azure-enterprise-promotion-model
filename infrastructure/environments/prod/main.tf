@@ -37,13 +37,11 @@ resource "azurerm_resource_group" "main" {
 module "key_vault" {
   source = "../../modules/key-vault"
 
-  key_vault_name           = var.key_vault_name
-  location                 = azurerm_resource_group.main.location
-  resource_group_name      = azurerm_resource_group.main.name
-  purge_protection_enabled = true  # Production protection
-  app_service_principal_id = module.app_service.app_service_principal_id
-
-  secrets = var.key_vault_secrets
+  key_vault_name               = var.key_vault_name
+  location                     = azurerm_resource_group.main.location
+  resource_group_name          = azurerm_resource_group.main.name
+  purge_protection_enabled     = true  # Production protection
+  app_service_principal_id     = module.app_service.app_service_principal_id
 
   tags = local.tags
 }
@@ -67,8 +65,6 @@ module "app_service" {
   }
 
   tags = local.tags
-
-  depends_on = [module.key_vault]
 }
 
 locals {

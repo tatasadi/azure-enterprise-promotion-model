@@ -31,13 +31,6 @@ variable "app_service_principal_id" {
   default     = ""
 }
 
-variable "secrets" {
-  description = "Map of secrets to create in Key Vault"
-  type        = map(string)
-  default     = {}
-  sensitive   = true
-}
-
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)
