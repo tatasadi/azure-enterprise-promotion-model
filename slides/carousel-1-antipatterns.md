@@ -33,12 +33,12 @@ colorSchema: 'light'
   <div class="cover-cta">
     <span class="arrow">→</span> Swipe to learn what NOT to do
   </div>
-  <div class="cover-author">Ehsan • Azure Platform Engineer</div>
+  <div class="cover-author">Ehsan Tatasadi • Azure Platform Engineer</div>
 </div>
 
 ---
-layout: default
----
+
+## layout: default
 
 <div class="modern-slide">
   <div class="slide-number">01/09</div>
@@ -91,12 +91,12 @@ layout: default
 </div>
 
 ---
-layout: default
----
+
+## layout: default
 
 <div class="modern-slide split-slide">
   <div class="slide-number">02/09</div>
-  <h1 class="slide-title">Anti-Patterns #1-3: Secret Management</h1>
+  <h1 class="slide-title head-title">Anti-Patterns #1-3: Secret Management</h1>
 
   <div class="split-container">
     <div class="left-column danger-zone">
@@ -142,12 +142,12 @@ layout: default
 </div>
 
 ---
-layout: default
----
+
+## layout: default
 
 <div class="modern-slide split-slide">
   <div class="slide-number">03/09</div>
-  <h1 class="slide-title">Anti-Patterns #4-6: Infrastructure Chaos</h1>
+  <h1 class="slide-title head-title">Anti-Patterns #4-6: Infrastructure Chaos</h1>
 
   <div class="split-container">
     <div class="left-column danger-zone">
@@ -193,12 +193,12 @@ layout: default
 </div>
 
 ---
-layout: default
----
+
+## layout: default
 
 <div class="modern-slide split-slide">
   <div class="slide-number">04/09</div>
-  <h1 class="slide-title">Anti-Patterns #7-9: Deployment Disasters</h1>
+  <h1 class="slide-title head-title">Anti-Patterns #7-9: Deployment Disasters</h1>
 
   <div class="split-container">
     <div class="left-column danger-zone">
@@ -244,12 +244,12 @@ layout: default
 </div>
 
 ---
-layout: default
----
+
+## layout: default
 
 <div class="modern-slide split-slide">
   <div class="slide-number">05/09</div>
-  <h1 class="slide-title">Anti-Patterns #10-12: Pipeline Problems</h1>
+  <h1 class="slide-title head-title">Anti-Patterns #10-12: Pipeline Problems</h1>
 
   <div class="split-container">
     <div class="left-column danger-zone">
@@ -295,8 +295,8 @@ layout: default
 </div>
 
 ---
-layout: default
----
+
+## layout: default
 
 <div class="modern-slide">
   <div class="slide-number">06/09</div>
@@ -356,8 +356,8 @@ layout: default
 </div>
 
 ---
-layout: default
----
+
+## layout: default
 
 <div class="modern-slide">
   <div class="slide-number">07/09</div>
@@ -401,8 +401,8 @@ layout: default
 </div>
 
 ---
-layout: default
----
+
+## layout: default
 
 <div class="modern-slide">
   <div class="slide-number">08/09</div>
@@ -461,8 +461,8 @@ layout: default
 </div>
 
 ---
-layout: default
----
+
+## layout: default
 
 <div class="modern-slide final-slide">
   <div class="slide-number">09/09</div>
@@ -513,8 +513,8 @@ layout: default
 </div>
 
 ---
-layout: default
----
+
+## layout: default
 
 <div class="modern-slide cta-slide">
   <div class="slide-number">10/10</div>
@@ -526,7 +526,7 @@ layout: default
   </div>
 
   <div class="final-cta">
-    💬 Which one surprised you most?<br/>
+    💬 Which one surprised you most?
     Let me know in the comments!
   </div>
 
