@@ -6,7 +6,7 @@ highlighter: shiki
 lineNumbers: false
 drawings:
   persist: false
-transition: slide-left
+transition: none
 title: '12 Azure CI/CD Anti-Patterns'
 mdc: true
 download: true
@@ -19,11 +19,13 @@ fonts:
 themeConfig:
   primary: '#0078D4'
 colorSchema: 'light'
+css: unocss
 ---
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800;900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('./style.css');
 </style>
 
 <div class="cover-slide">
@@ -33,7 +35,7 @@ colorSchema: 'light'
   <div class="cover-cta">
     <span class="arrow">→</span> Swipe to learn what NOT to do
   </div>
-  <div class="cover-author">Ehsan Tatasadi • Azure Platform Engineer</div>
+  <div class="cover-author">Ehsan Tatasadi • Senior Azure Engineer (Platform & DevOps)</div>
 </div>
 
 ---
@@ -41,7 +43,7 @@ colorSchema: 'light'
 ## layout: default
 
 <div class="modern-slide">
-  <div class="slide-number">01/09</div>
+  <div class="slide-number">01/10</div>
   <h1 class="slide-title">The Reality Check</h1>
 
   <div class="content-box">
@@ -95,7 +97,7 @@ colorSchema: 'light'
 ## layout: default
 
 <div class="modern-slide split-slide">
-  <div class="slide-number">02/09</div>
+  <div class="slide-number">02/10</div>
   <h1 class="slide-title head-title">Anti-Patterns #1-3: Secret Management</h1>
 
   <div class="split-container">
@@ -146,7 +148,7 @@ colorSchema: 'light'
 ## layout: default
 
 <div class="modern-slide split-slide">
-  <div class="slide-number">03/09</div>
+  <div class="slide-number">03/10</div>
   <h1 class="slide-title head-title">Anti-Patterns #4-6: Infrastructure Chaos</h1>
 
   <div class="split-container">
@@ -197,7 +199,7 @@ colorSchema: 'light'
 ## layout: default
 
 <div class="modern-slide split-slide">
-  <div class="slide-number">04/09</div>
+  <div class="slide-number">04/10</div>
   <h1 class="slide-title head-title">Anti-Patterns #7-9: Deployment Disasters</h1>
 
   <div class="split-container">
@@ -248,7 +250,7 @@ colorSchema: 'light'
 ## layout: default
 
 <div class="modern-slide split-slide">
-  <div class="slide-number">05/09</div>
+  <div class="slide-number">05/10</div>
   <h1 class="slide-title head-title">Anti-Patterns #10-12: Pipeline Problems</h1>
 
   <div class="split-container">
@@ -299,7 +301,7 @@ colorSchema: 'light'
 ## layout: default
 
 <div class="modern-slide">
-  <div class="slide-number">06/09</div>
+  <div class="slide-number">06/10</div>
   <h1 class="slide-title">The Enterprise Pattern</h1>
   <p class="subtitle">Build Once, Deploy Everywhere</p>
 
@@ -360,7 +362,7 @@ colorSchema: 'light'
 ## layout: default
 
 <div class="modern-slide">
-  <div class="slide-number">07/09</div>
+  <div class="slide-number">07/10</div>
   <h1 class="slide-title">Why This Matters</h1>
 
   <div class="impact-grid">
@@ -405,7 +407,7 @@ colorSchema: 'light'
 ## layout: default
 
 <div class="modern-slide">
-  <div class="slide-number">08/09</div>
+  <div class="slide-number">08/10</div>
   <h1 class="slide-title">How to Fix This</h1>
 
   <div class="roadmap">
@@ -465,7 +467,7 @@ colorSchema: 'light'
 ## layout: default
 
 <div class="modern-slide final-slide">
-  <div class="slide-number">09/09</div>
+  <div class="slide-number">09/10</div>
   <h1 class="slide-title">Key Takeaways</h1>
 
   <div class="takeaways">
