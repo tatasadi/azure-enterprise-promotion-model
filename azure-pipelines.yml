@@ -16,7 +16,6 @@ trigger:
     exclude:
     - docs/*
     - README.md
-    - plan.md
 
 pool:
   vmImage: 'ubuntu-latest'
@@ -44,48 +43,39 @@ stages:
 # ============================================
 # DEV ENVIRONMENT
 # ============================================
-- stage: Dev_Infrastructure
-  displayName: 'Dev - Infrastructure'
+- stage: Dev
+  displayName: 'Dev - Infrastructure & Deployment'
   dependsOn: Build
   variables:
   - group: keyvault-secrets-dev  # Variable Group containing secrets for Key Vault (used after Terraform)
   jobs:
-  - job: TerraformPlan
-    displayName: 'Terraform Plan'
-    steps:
-    - template: pipelines/templates/terraform-plan.yml
-      parameters:
-        environment: 'dev'
-        azureServiceConnection: 'Azure-ServiceConnection-Dev'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/environments/dev'
-
-  - job: TerraformApply
-    displayName: 'Terraform Apply'
-    dependsOn: TerraformPlan
-    steps:
-    - template: pipelines/templates/terraform-apply.yml
-      parameters:
-        environment: 'dev'
-        azureServiceConnection: 'Azure-ServiceConnection-Dev'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/environments/dev'
-
-    - template: pipelines/templates/populate-keyvault-secrets.yml
-      parameters:
-        environment: 'dev'
-        azureServiceConnection: 'Azure-ServiceConnection-Dev'
-        keyVaultName: 'kv-inventory-dev-001'
-
-- stage: Dev_Deploy
-  displayName: 'Dev - Deploy Application'
-  dependsOn: Dev_Infrastructure
-  jobs:
   - deployment: DeployDev
-    displayName: 'Deploy to Dev'
+    displayName: 'Deploy Dev Infrastructure & Application'
     environment: 'dev'
     strategy:
       runOnce:
         deploy:
           steps:
+          # Provision Infrastructure
+          - template: pipelines/templates/terraform-plan.yml
+            parameters:
+              environment: 'dev'
+              azureServiceConnection: 'Azure-ServiceConnection-Dev'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/environments/dev'
+
+          - template: pipelines/templates/terraform-apply.yml
+            parameters:
+              environment: 'dev'
+              azureServiceConnection: 'Azure-ServiceConnection-Dev'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/environments/dev'
+
+          - template: pipelines/templates/populate-keyvault-secrets.yml
+            parameters:
+              environment: 'dev'
+              azureServiceConnection: 'Azure-ServiceConnection-Dev'
+              keyVaultName: 'kv-inventory-dev-001'
+
+          # Deploy Application
           - template: pipelines/templates/deploy-app.yml
             parameters:
               environment: 'dev'
@@ -95,48 +85,39 @@ stages:
 # ============================================
 # TEST ENVIRONMENT (with approval gate)
 # ============================================
-- stage: Test_Infrastructure
-  displayName: 'Test - Infrastructure'
-  dependsOn: Dev_Deploy
+- stage: Test
+  displayName: 'Test - Infrastructure & Deployment'
+  dependsOn: Dev
   variables:
   - group: keyvault-secrets-test  # Variable Group containing secrets for Key Vault (used after Terraform)
   jobs:
-  - job: TerraformPlan
-    displayName: 'Terraform Plan'
-    steps:
-    - template: pipelines/templates/terraform-plan.yml
-      parameters:
-        environment: 'test'
-        azureServiceConnection: 'Azure-ServiceConnection-Test'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/environments/test'
-
-  - job: TerraformApply
-    displayName: 'Terraform Apply'
-    dependsOn: TerraformPlan
-    steps:
-    - template: pipelines/templates/terraform-apply.yml
-      parameters:
-        environment: 'test'
-        azureServiceConnection: 'Azure-ServiceConnection-Test'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/environments/test'
-
-    - template: pipelines/templates/populate-keyvault-secrets.yml
-      parameters:
-        environment: 'test'
-        azureServiceConnection: 'Azure-ServiceConnection-Test'
-        keyVaultName: 'kv-inventory-test-001'
-
-- stage: Test_Deploy
-  displayName: 'Test - Deploy Application'
-  dependsOn: Test_Infrastructure
-  jobs:
   - deployment: DeployTest
-    displayName: 'Deploy to Test'
-    environment: 'test'  # Environment with approval gate configured in Azure DevOps
+    displayName: 'Deploy Test Infrastructure & Application'
+    environment: 'test'  # Single approval gate for entire Test environment
     strategy:
       runOnce:
         deploy:
           steps:
+          # Provision Infrastructure
+          - template: pipelines/templates/terraform-plan.yml
+            parameters:
+              environment: 'test'
+              azureServiceConnection: 'Azure-ServiceConnection-Test'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/environments/test'
+
+          - template: pipelines/templates/terraform-apply.yml
+            parameters:
+              environment: 'test'
+              azureServiceConnection: 'Azure-ServiceConnection-Test'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/environments/test'
+
+          - template: pipelines/templates/populate-keyvault-secrets.yml
+            parameters:
+              environment: 'test'
+              azureServiceConnection: 'Azure-ServiceConnection-Test'
+              keyVaultName: 'kv-inventory-test-001'
+
+          # Deploy Application
           - template: pipelines/templates/deploy-app.yml
             parameters:
               environment: 'test'
@@ -146,48 +127,39 @@ stages:
 # ============================================
 # PROD ENVIRONMENT (with approval gate)
 # ============================================
-- stage: Prod_Infrastructure
-  displayName: 'Prod - Infrastructure'
-  dependsOn: Test_Deploy
+- stage: Prod
+  displayName: 'Prod - Infrastructure & Deployment'
+  dependsOn: Test
   variables:
   - group: keyvault-secrets-prod  # Variable Group containing secrets for Key Vault (used after Terraform)
   jobs:
-  - job: TerraformPlan
-    displayName: 'Terraform Plan'
-    steps:
-    - template: pipelines/templates/terraform-plan.yml
-      parameters:
-        environment: 'prod'
-        azureServiceConnection: 'Azure-ServiceConnection-Prod'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/environments/prod'
-
-  - job: TerraformApply
-    displayName: 'Terraform Apply'
-    dependsOn: TerraformPlan
-    steps:
-    - template: pipelines/templates/terraform-apply.yml
-      parameters:
-        environment: 'prod'
-        azureServiceConnection: 'Azure-ServiceConnection-Prod'
-        workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/environments/prod'
-
-    - template: pipelines/templates/populate-keyvault-secrets.yml
-      parameters:
-        environment: 'prod'
-        azureServiceConnection: 'Azure-ServiceConnection-Prod'
-        keyVaultName: 'kv-inventory-prod-001'
-
-- stage: Prod_Deploy
-  displayName: 'Prod - Deploy Application'
-  dependsOn: Prod_Infrastructure
-  jobs:
   - deployment: DeployProd
-    displayName: 'Deploy to Production'
-    environment: 'prod'  # Environment with approval gate configured in Azure DevOps
+    displayName: 'Deploy Prod Infrastructure & Application'
+    environment: 'prod'  # Single approval gate for entire Prod environment
     strategy:
       runOnce:
         deploy:
           steps:
+          # Provision Infrastructure
+          - template: pipelines/templates/terraform-plan.yml
+            parameters:
+              environment: 'prod'
+              azureServiceConnection: 'Azure-ServiceConnection-Prod'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/environments/prod'
+
+          - template: pipelines/templates/terraform-apply.yml
+            parameters:
+              environment: 'prod'
+              azureServiceConnection: 'Azure-ServiceConnection-Prod'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/infrastructure/environments/prod'
+
+          - template: pipelines/templates/populate-keyvault-secrets.yml
+            parameters:
+              environment: 'prod'
+              azureServiceConnection: 'Azure-ServiceConnection-Prod'
+              keyVaultName: 'kv-inventory-prod-001'
+
+          # Deploy Application
           - template: pipelines/templates/deploy-app.yml
             parameters:
               environment: 'prod'
