@@ -202,7 +202,7 @@ variable "key_vault_secrets" {
 
 ```hcl
 variable "location" {
-  default = "West Europe"  # Change to your preferred region
+  default = "East US"  # Change to your preferred region
 }
 ```
 
