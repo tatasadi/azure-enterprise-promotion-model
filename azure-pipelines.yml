@@ -56,6 +56,9 @@ stages:
       runOnce:
         deploy:
           steps:
+          # Checkout source code (required for deployment jobs)
+          - checkout: self
+
           # Provision Infrastructure
           - template: pipelines/templates/terraform-plan.yml
             parameters:
@@ -98,6 +101,9 @@ stages:
       runOnce:
         deploy:
           steps:
+          # Checkout source code (required for deployment jobs)
+          - checkout: self
+
           # Provision Infrastructure
           - template: pipelines/templates/terraform-plan.yml
             parameters:
@@ -140,6 +146,9 @@ stages:
       runOnce:
         deploy:
           steps:
+          # Checkout source code (required for deployment jobs)
+          - checkout: self
+
           # Provision Infrastructure
           - template: pipelines/templates/terraform-plan.yml
             parameters:
